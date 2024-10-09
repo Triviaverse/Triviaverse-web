@@ -1,18 +1,13 @@
-import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
-import { VitePluginNode } from 'vite-plugin-node'
+import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import vueDevTools from 'vite-plugin-vue-devtools';
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     vue(),
     vueDevTools(),
-    VitePluginNode({
-      adapter: 'express',
-      appPath: './server/index.js',
-      exportName: 'viteNodeApp',
-    })
   ],
   resolve: {
     alias: {
@@ -20,6 +15,13 @@ export default defineConfig({
     }
   },
   server: {
-    cors: true,
+    // Configure the proxy to redirect API requests
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001', // The port your Express server will run on
+        changeOrigin: true, // This option is needed for virtual hosted sites
+        rewrite: (path) => path.replace(/^\/api/, ''), // Remove `/api` prefix when forwarding
+      },
+    },
   }
-})
+});
