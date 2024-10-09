@@ -18,9 +18,9 @@ export default defineConfig({
     // Configure the proxy to redirect API requests
     proxy: {
       '/api': {
-        target: 'http://localhost:3001', // The port your Express server will run on
-        changeOrigin: true, // This option is needed for virtual hosted sites
-        rewrite: (path) => path.replace(/^\/api/, ''), // Remove `/api` prefix when forwarding
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   }
