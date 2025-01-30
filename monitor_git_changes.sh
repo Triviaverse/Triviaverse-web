@@ -16,7 +16,7 @@ while true; do
     if [ "$LOCAL" != "$REMOTE" ]; then
         echo "Updates found, pulling from GitHub..."
         git pull origin main  # Pull the latest updates from the remote (replace 'main' with your branch if needed)
-        ~/Triviaverse-web/git_pull.sh  # Trigger the git pull script
+        ./git_pull.sh  # Trigger the git pull script
     else
         echo "No updates found."
     fi
