@@ -11,14 +11,14 @@ git fetch --all
 git reset --hard origin/main  # Make sure to replace 'main' with your active branch name if different
 
 echo "Updating composer self..."
-composer self-update
+/usr/local/bin/composer self-update
 
 echo "Running composer update..."
-composer update --no-interaction
+/usr/local/bin/composer update --no-interaction
 
 # Install/update Laravel dependencies
 echo "Running composer install..."
-composer install --no-interaction
+/usr/local/bin/composer install --no-interaction
 
 echo "Running migrations..."
 php artisan migrate --no-interaction
