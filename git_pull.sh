@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Redirect all output to tty1
+exec > /dev/tty1 2>&1
+
 # Navigate to the project directory
 cd ~/Triviaverse-web || exit 1
 
