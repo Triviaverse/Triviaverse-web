@@ -15,7 +15,7 @@ composer update --no-interaction
 
 # Install/update Laravel dependencies
 echo "Running composer install..."
-composer install --no-interaction --prefer-dist
+composer install --no-interaction
 
 # Install/update Vue.js dependencies
 echo "Running npm install..."
