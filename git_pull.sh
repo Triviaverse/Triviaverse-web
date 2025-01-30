@@ -7,6 +7,9 @@ cd ~/Triviaverse-web || exit 1
 git fetch --all
 git reset --hard origin/main  # Make sure to replace 'main' with your active branch name if different
 
+echo "Running composer update..."
+composer update --no-interaction
+
 # Install/update Laravel dependencies
 echo "Running composer install..."
 composer install --no-interaction --prefer-dist
