@@ -6,6 +6,7 @@ exec > /dev/tty1 2>&1
 CHECK_INTERVAL=60  # Adjust this value as needed
 
 while true; do
+    source ~/.bashrc
     echo "Checking for updates from GitHub..."
     cd ~/Triviaverse-web || exit  # Change to your repo directory, exit if failed
     git fetch origin  # Fetch the latest updates from the remote repository
