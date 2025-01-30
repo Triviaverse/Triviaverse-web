@@ -10,6 +10,9 @@ cd ~/Triviaverse-web || exit 1
 git fetch --all
 git reset --hard origin/main  # Make sure to replace 'main' with your active branch name if different
 
+echo "Updating composer self..."
+composer self-update
+
 echo "Running composer update..."
 composer update --no-interaction
 
