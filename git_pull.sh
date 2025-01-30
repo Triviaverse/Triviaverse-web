@@ -18,7 +18,7 @@ echo "Running composer install..."
 composer install --no-interaction
 
 echo "Running migrations..."
-php artisan migrate
+php artisan migrate --no-interaction
 
 # Install/update Vue.js dependencies
 echo "Running npm install..."
