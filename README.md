@@ -1,2 +1,2 @@
 # Triviaverse web
-cigi
+
