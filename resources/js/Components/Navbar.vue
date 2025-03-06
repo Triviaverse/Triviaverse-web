@@ -1,136 +1,93 @@
-<template>
-    <nav class="navbar navbar-expand-lg">
-      <div class="container">
-        
-        <!-- Márkanév -->
-        <RouterLink to="/" class="navbar-brand">Triviaverse</RouterLink>
-  
-        <!-- Mobil menü gomb -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-  
-        <!-- Menüelemek középen -->
-        <div class="collapse navbar-collapse" id="navbarNav">
-          <ul class="navbar-nav mx-auto">
-            <li class="nav-item">
-              <RouterLink to="/" class="nav-link">Főoldal</RouterLink>
-            </li>
-            <li class="nav-item">
-              <RouterLink to="/kerdesek" class="nav-link">Kérdések</RouterLink>
-            </li>
-          </ul>
-  
-          <!-- Bejelentkezés / Profilom gomb -->
-          <ul class="navbar-nav ms-auto">
-            <li class="nav-item" v-if="!isLoggedIn">
-              <RouterLink to="/bejelentkezes" class="nav-link login-btn">Bejelentkezés</RouterLink>
-            </li>
-            <li class="nav-item" v-if="isLoggedIn">
-              <RouterLink to="/profil" class="nav-link">Profilom</RouterLink>
-            </li>
-          </ul>
-  
-        </div>
-        
-      </div>
-    </nav>
-  </template>
-  
-  <script>
-  export default {
-    data() {
-      return {
-        // Bejelentkezett felhasználó állapotának kezelése
-        isLoggedIn: false
-      };
+<script>
+import { Link } from '@inertiajs/vue3';
+import { User } from 'lucide-vue-next'; 
+
+export default {
+  components: { Link, User },
+  props: {
+    user: Object,
+  },
+  data() {
+    return {
+      showDropdown: false,
+    };
+  },
+  computed: {
+    userRole() {
+      return this.user?.role || "guest";
     },
-    created() {
-      // Ellenőrizzük, hogy be van-e jelentkezve a felhasználó
-      this.isLoggedIn = !!localStorage.getItem("userLoggedIn");
+    userProfileImage() {
+      return this.user?.profilePicture || null;
     }
-  };
-  </script>
-  
-  
-  <style scoped>
-  /* Navbar stílusok */
-  .navbar {
-    background: linear-gradient(135deg, #2b5876, #4e4376); /* Modern kék-lila gradient */
-    padding: 15px 0;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  },
+  methods: {
+    toggleDropdown() {
+      this.showDropdown = !this.showDropdown;
+    },
+    logout() {
+      this.$inertia.post(route('logout'));
+    }
   }
-  
-  /* Márkanév */
-  .navbar-brand {
-    color: #ffffff;
-    font-size: 1.8rem;
-    font-weight: bold;
-    transition: transform 0.3s ease;
-  }
-  
-  .navbar-brand:hover {
-    transform: scale(1.1);
-  }
-  
-  /* Navigációs linkek */
-  .nav-link {
-    font-size: larger;
-    font-weight: 500;
-    color: #ffffff;
-    position: relative;
-    transition: color 0.3s ease;
-  }
-  
-  /* Hover effekt */
-  .nav-link:hover {
-    color: #ffcc00;
-  }
-  
-  /* Animált underline */
-  .nav-link::after {
-    content: "";
-    display: block;
-    height: 3px;
-    width: 0;
-    background: #ffcc00;
-    transition: width 0.3s ease-in-out;
-    position: absolute;
-    bottom: -5px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  
-  .nav-link:hover::after {
-    width: 80%;
-  }
-  
-  /* Bejelentkezés gomb jobbra */
-  .login-btn {
-    background-color: #ffcc00;
-    color: #333;
-    font-weight: bold;
-    padding: 8px 15px;
-    border-radius: 8px;
-    transition: all 0.3s ease-in-out;
-    text-decoration: none;
-  }
-  
-  .login-btn:hover {
-    background-color: #ffd633;
-    color: #000;
-    transform: scale(1.05);
-    box-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
-  }
-  
-  /* Mobilbarát hamburger ikon */
-  .navbar-toggler {
-    border: none;
-    outline: none;
-  }
-  
-  .navbar-toggler-icon {
-    filter: invert(1);
-  }
-  </style>
-  
+};
+</script>
+
+<template>
+  <nav class="bg-gray-900 text-white py-4 shadow-lg border-b-4 border-blue-500">
+    <div class="container mx-auto flex justify-between items-center px-6">
+      
+      <!-- Logo -->
+      <Link :href="route('dashboard')" class="flex items-center space-x-3">
+        <img src="@/Layouts/logo.jpg" alt="Triviaverse Logo" class="h-10 rounded-full shadow-md">
+        <span class="text-2xl font-bold text-blue-400 hover:text-blue-500 transition">
+          Triviaverse
+        </span>
+      </Link>
+
+      <!-- Menü -->
+      <ul class="hidden md:flex space-x-6 text-lg">
+        <li v-if="userRole !== 'student'">
+          <Link 
+            :href="route('quizzes.create')" 
+            class="hover:text-blue-400 transition duration-300"
+          >
+            Kvíz létrehozása
+          </Link>
+        </li>
+        <li>
+          <Link 
+            :href="route('quizzes.index')" 
+            class="hover:text-blue-400 transition duration-300"
+          >
+            Kvízek
+          </Link>
+        </li>
+        <li v-if="userRole === 'admin'">
+          <Link 
+            :href="route('quizzes.manage')" 
+            class="hover:text-blue-400 transition duration-300"
+          >
+            Kvízek kezelése
+          </Link>
+        </li>
+      </ul>
+
+      <!-- Felhasználói menü -->
+      <div class="relative">
+        <button @click="toggleDropdown" class="flex items-center focus:outline-none">
+          <img 
+            v-if="userProfileImage"
+            :src="userProfileImage"
+            alt="Profilkép"
+            class="w-10 h-10 rounded-full border-2 border-blue-500 shadow-lg cursor-pointer">
+          <User v-else class="w-10 h-10 text-gray-400 border-2 border-blue-500 rounded-full p-1 shadow-lg cursor-pointer" />
+        </button>
+        
+        <!-- Dropdown Menü -->
+        <div v-if="showDropdown" class="absolute right-0 mt-2 w-48 bg-gray-800 text-white shadow-lg rounded-lg overflow-hidden z-50">
+          <Link :href="route('profile.edit')" class="block px-4 py-2 hover:bg-gray-600">Profilom</Link>
+          <button @click="logout" class="block w-full text-left px-4 py-2 bg-red-600 hover:bg-red-400">Kijelentkezés</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+</template>
