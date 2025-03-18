@@ -71,23 +71,38 @@
             <!-- Feleletválasztós opciók -->
             <div v-if="question.type === 'multiple_choice'" class="mt-4">
               <h3 class="text-sm font-semibold text-gray-300">Válaszlehetőségek</h3>
+              
               <div 
                 v-for="(option, optIndex) in question.options" 
                 :key="optIndex" 
                 class="flex items-center gap-3 mt-2"
               >
+                <!-- Válasz beviteli mező -->
                 <input 
                   v-model="question.options[optIndex]" 
                   type="text" 
                   class="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-600 focus:ring focus:ring-blue-500"
                 >
+
+                <!-- Helyes válasz checkbox -->
                 <input 
                   type="checkbox" 
                   v-model="question.correctAnswers" 
                   :value="optIndex" 
                   class="accent-blue-500"
                 >
+
+                <!-- 🛑 Törlés gomb (ha legalább 2 opció van) -->
+                <button 
+                  v-if="question.options.length > 2"
+                  @click.prevent="removeOption(index, optIndex)" 
+                  class="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition"
+                >
+                  -
+                </button>
               </div>
+
+              <!-- Új válasz hozzáadása -->
               <button 
                 @click.prevent="addOption(index)" 
                 class="mt-3 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
@@ -126,6 +141,10 @@
   </div>
 </template>
 
+---
+
+## **✅ Frissített Vue metódusok**
+```vue
 <script>
 import { router, Link } from "@inertiajs/vue3"; 
 import Navbar from '@/Components/Navbar.vue';
@@ -158,10 +177,22 @@ export default {
         this.quiz.questions.push({
           question_text: "", 
           type: "multiple_choice",
-          options: [""],
+          options: ["", ""], // 🛑 Legalább két válaszopció kell
           correctAnswers: [],
         });
       }
+    },
+    addOption(questionIndex) {
+      this.quiz.questions[questionIndex].options.push("");
+    },
+    removeOption(questionIndex, optIndex) {
+      // 🛑 Csak akkor törölhető, ha legalább 2 opció marad
+      if (this.quiz.questions[questionIndex].options.length > 2) {
+        this.quiz.questions[questionIndex].options.splice(optIndex, 1);
+      }
+    },
+    removeQuestion(index) {
+      this.quiz.questions.splice(index, 1);
     },
     submitQuiz() {
       if (this.quiz.questions.length === 0) {
@@ -169,12 +200,6 @@ export default {
         return;
       }
       router.post(route("quizzes.store"), this.quiz);
-    },
-    removeQuestion(index) {
-      this.quiz.questions.splice(index, 1);
-    },
-    addOption(questionIndex) {
-      this.quiz.questions[questionIndex].options.push("");
     },
   },
 };

@@ -30,6 +30,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/quizzes/{id}', [QuizController::class, 'destroy'])->name('quizzes.destroy');
     Route::get('/quizzes/{id}/start', [QuizController::class, 'start'])->name('quizzes.start'); 
     Route::get('/quizzes/{id}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
+    Route::put('/quizzes/{id}', [QuizController::class, 'update'])->name('quizzes.update');
 });
 
 require __DIR__.'/auth.php';

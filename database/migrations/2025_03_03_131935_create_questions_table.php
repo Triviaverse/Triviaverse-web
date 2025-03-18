@@ -16,6 +16,8 @@ return new class extends Migration
             $table->foreignId('quiz_id')->constrained()->onDelete('cascade');
             $table->text('question_text')->nullable();
             $table->enum('type', ['multiple_choice', 'single_choice', 'text']);
+            $table->json('options')->nullable();
+            $table->json('correctAnswers')->nullable();
             $table->timestamps();
         });
         

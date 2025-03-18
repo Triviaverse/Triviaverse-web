@@ -4,7 +4,7 @@ import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
 import { X } from 'lucide-vue-next'; 
 
@@ -17,8 +17,11 @@ defineProps({
     },
 });
 
-// Aktív tab követése
 const activeTab = ref('login');
+
+const switchToRegister = () => {
+    router.visit(route('register'));
+};
 
 const form = useForm({
     email: '',
@@ -54,9 +57,8 @@ const submit = () => {
                     Bejelentkezés
                 </button>
                 <button 
-                    @click="activeTab = 'register'"
-                    :class="activeTab === 'register' ? 'border-blue-500 text-blue-400' : 'text-gray-400'"
-                    class="w-1/2 py-2 text-lg font-semibold text-center border-b-2 transition"
+                    @click="switchToRegister"
+                    class="w-1/2 py-2 text-lg font-semibold text-center border-b-2 transition text-gray-400"
                 >
                     Regisztráció
                 </button>
@@ -107,18 +109,6 @@ const submit = () => {
                         </button>
                     </div>
                 </form>
-            </div>
-
-            <!-- Regisztráció (átirányítás a regisztrációs oldalra) -->
-            <div v-if="activeTab === 'register'" class="text-center">
-                <h2 class="text-2xl font-bold text-center mb-6">Regisztráció a <span class="text-blue-400">Triviaverse</span>-re</h2>
-                <p class="text-gray-300 mb-6">Még nincs fiókod? Kattints az alábbi gombra, és regisztrálj most!</p>
-                <Link 
-                    :href="route('register')"
-                    class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-xl shadow-lg transition transform hover:scale-105"
-                >
-                    Regisztráció
-                </Link>
             </div>
         </div>
     </div>
