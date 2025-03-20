@@ -31,6 +31,10 @@ npm install
 echo "Running npm run build..."
 npm run build  # Use 'npm run production' for production builds
 
+echo "Setting up permissions..."
+chmod 777 git_pull.sh monitor_git_changes.sh
+chmod -R guo+w storage
+
 # Clear and cache Laravel configuration, routes, and views (optional but recommended)
 echo "Clearing and caching Laravel config, routes, and views..."
 php artisan config:cache
