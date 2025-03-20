@@ -10,11 +10,11 @@ cd /opt/lampp/htdocs/Triviaverse-web || exit 1
 git fetch --all
 git reset --hard origin/main  # Make sure to replace 'main' with your active branch name if different
 
-echo "Updating composer self..."
-/usr/local/bin/composer self-update
+#echo "Updating composer self..."
+#/usr/local/bin/composer self-update
 
-echo "Running composer update..."
-/usr/local/bin/composer update --no-interaction
+#echo "Running composer update..."
+#/usr/local/bin/composer update --no-interaction
 
 # Install/update Laravel dependencies
 echo "Running composer install..."
