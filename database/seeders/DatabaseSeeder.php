@@ -22,14 +22,14 @@ class DatabaseSeeder extends Seeder
             'name' => 'Tanar User',
             'email' => 'tanar@example.com',
             'password' => bcrypt('password'),
-            'role' => 'tanar'
+            'role' => 'teacher'
         ]);
 
         User::factory()->create([
             'name' => 'Diak User',
             'email' => 'diak@example.com',
             'password' => bcrypt('password'),
-            'role' => 'diak'
+            'role' => 'student'
         ]);
 
         Quiz::factory(10)->create();
