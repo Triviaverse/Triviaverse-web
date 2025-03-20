@@ -35,8 +35,13 @@ echo "Setting up permissions..."
 chmod 777 git_pull.sh monitor_git_changes.sh
 chmod -R guo+w storage
 
+
 # Clear and cache Laravel configuration, routes, and views (optional but recommended)
 echo "Clearing and caching Laravel config, routes, and views..."
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
