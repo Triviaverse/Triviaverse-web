@@ -45,4 +45,4 @@ php artisan optimize
 php artisan optimize:clear
 php artisan view:clear
 
-
+echo "Server is up to date!"
