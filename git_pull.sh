@@ -37,12 +37,12 @@ chmod -R guo+w storage
 
 
 # Clear and cache Laravel configuration, routes, and views (optional but recommended)
-echo "Clearing and caching Laravel config, routes, and views..."
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
+#echo "Clearing and caching Laravel config, routes, and views..."
+#php artisan config:clear
+#php artisan route:clear
+#php artisan view:clear
 
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+#php artisan config:cache
+#php artisan route:cache
+#php artisan view:cache
 
