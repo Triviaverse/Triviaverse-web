@@ -18,8 +18,19 @@ class DatabaseSeeder extends Seeder
             'role' => 'admin'
         ]);
 
-        User::factory(5)->state(['role' => 'teacher'])->create();
-        User::factory(20)->state(['role' => 'student'])->create();
+        User::factory()->create([
+            'name' => 'Tanar User',
+            'email' => 'tanar@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'tanar'
+        ]);
+
+        User::factory()->create([
+            'name' => 'Diak User',
+            'email' => 'diak@example.com',
+            'password' => bcrypt('password'),
+            'role' => 'diak'
+        ]);
 
         Quiz::factory(10)->create();
     }
