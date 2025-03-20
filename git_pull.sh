@@ -37,5 +37,3 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-# Restart the Laravel queue worker (if applicable)
-# systemctl restart laravel-queue-worker.service   # Uncomment if you're using a queue worker service
