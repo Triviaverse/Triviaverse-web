@@ -4,7 +4,7 @@
 exec > /dev/tty1 2>&1
 
 # Navigate to the project directory
-cd ~/Triviaverse-web || exit 1
+cd /opt/lampp/htdocs/Triviaverse-web || exit 1
 
 # Pull the latest code from Git
 git fetch --all

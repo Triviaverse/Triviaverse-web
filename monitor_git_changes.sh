@@ -8,7 +8,7 @@ CHECK_INTERVAL=60  # Adjust this value as needed
 while true; do
     source ~/.bashrc
     echo "Checking for updates from GitHub..."
-    cd ~/Triviaverse-web || exit  # Change to your repo directory, exit if failed
+    cd /opt/lampp/htdocs/Triviaverse-web || exit  # Change to your repo directory, exit if failed
     git fetch origin  # Fetch the latest updates from the remote repository
     LOCAL=$(git rev-parse HEAD)  # Get the current local commit hash
     REMOTE=$(git rev-parse origin/main)  # Get the remote commit hash (replace 'main' if using a different branch)
