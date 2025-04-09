@@ -1,18 +1,18 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\QuizController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QuizController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
+        'canLogin'       => Route::has('login'),
+        'canRegister'    => Route::has('register'),
         'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
+        'phpVersion'     => PHP_VERSION,
     ]);
 })->name('welcome');
 
@@ -24,14 +24,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/quizzes/create', [QuizController::class, 'create'])->middleware(['auth'])->name('quizzes.create');
-    Route::post('/quizzes', [QuizController::class, 'store'])->name('quizzes.store'); 
+    Route::post('/quizzes', [QuizController::class, 'store'])->name('quizzes.store');
     Route::get('/quizzes/manage', [QuizController::class, 'manage'])->name('quizzes.manage');
     Route::get('/quizzes', [QuizController::class, 'index'])->name('quizzes.index');
     Route::delete('/quizzes/{id}', [QuizController::class, 'destroy'])->name('quizzes.destroy');
-    Route::get('/quizzes/{id}/start', [QuizController::class, 'start'])->name('quizzes.start'); 
+    Route::get('/quizzes/{id}/start', [QuizController::class, 'start'])->name('quizzes.start');
+    Route::post('/quizzes/{id}/submit', [QuizController::class, 'submitAnswer'])->name('quizzes.submitAnswer');
     Route::get('/quizzes/{id}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
     Route::put('/quizzes/{id}', [QuizController::class, 'update'])->name('quizzes.update');
 });
 
-require __DIR__.'/auth.php';
-
+require __DIR__ . '/auth.php';
