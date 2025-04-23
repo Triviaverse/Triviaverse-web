@@ -14,7 +14,6 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /** Show the "Edit profile" page */
     public function edit(Request $request): Response
     {
         return Inertia::render('Profile/Edit', [
@@ -24,29 +23,23 @@ class ProfileController extends Controller
         ]);
     }
 
-    /** Handle profile info & picture update */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
         $data = $request->validated();
 
-        // reset email verification if needed
         if (isset($data['email']) && $data['email'] !== $user->email) {
             $user->email_verified_at = null;
         }
 
-        // Csak akkor írjuk felül a profile_picture-t, ha valóban feltöltés történt
         if ($request->hasFile('profile_picture')) {
-            // régi kép törlése
             if ($user->profile_picture) {
                 Storage::disk('public')->delete($user->profile_picture);
             }
-            // új kép tárolása
             $data['profile_picture'] = $request
                 ->file('profile_picture')
                 ->store('profile_pictures', 'public');
         } else {
-            // ha nincs új fájl, ne legyen null kulcs a data-ban
             unset($data['profile_picture']);
         }
 

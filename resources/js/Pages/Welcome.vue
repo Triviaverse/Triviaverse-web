@@ -24,8 +24,8 @@
           <p class="text-gray-300">Készíts saját kvízeket, és oszd meg a diákokkal vagy barátokkal.</p>
         </div>
         <div class="bg-gray-800 p-6 rounded-lg shadow-md hover:scale-105 transition">
-          <h3 class="text-xl font-semibold text-blue-300 mb-2">🚀 Gamifikáció</h3>
-          <p class="text-gray-300">Jutalmazási rendszer, amely motiválja a tanulókat.</p>
+          <h3 class="text-xl font-semibold text-blue-300 mb-2">📈 Grafikon</h3>
+          <p class="text-gray-300">Eredményeid fejlődését grafikonon is tudod követni.</p>
         </div>
       </div>
     </div>

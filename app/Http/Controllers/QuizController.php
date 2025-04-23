@@ -182,7 +182,7 @@ class QuizController extends Controller
             'quiz_id'   => $quiz->id,
             'user_id'   => Auth::id(),
             'score'     => $percentage,
-            'answers'   => $validated['answers'],  // cast-olja JSON-be
+            'answers'   => $validated['answers'],  
             'completed' => true,
         ]);
 

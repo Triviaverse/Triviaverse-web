@@ -15,25 +15,28 @@ class DashboardController extends Controller
         $user = Auth::user();
         $totalQuizzes = Quiz::count();
 
-        // Saját kitöltések (override-olt eredménnyel)
+        // Saját próbálkozások időrendben
         $myAttempts = QuizAttempt::with(['quiz', 'result'])
             ->where('user_id', $user->id)
+            ->orderBy('created_at')
             ->get()
             ->map(fn($attempt) => [
-                'id' => $attempt->id,
-                'quiz' => $attempt->quiz,
-                'quizResult' => [
+                'id'           => $attempt->id,
+                'quiz'         => $attempt->quiz,
+                'date'         => $attempt->created_at->format('Y-m-d'),
+                'quizResult'   => [
                     'score_percentage' => $attempt->result?->score_percentage ?? 0,
                     'is_overridden'    => $attempt->result?->is_overridden ?? false,
                 ],
             ]);
 
-        // Diákok kitöltései az általad létrehozott kvízekre (tanár/admin számára)
+        // Diákok eredményei
         $studentResults = collect();
         if ($user->role !== 'student') {
             $studentResults = QuizAttempt::with(['quiz', 'user', 'result'])
                 ->whereHas('quiz', fn($q) => $q->where('created_by', $user->id))
                 ->where('user_id', '!=', $user->id)
+                ->orderBy('created_at')
                 ->get()
                 ->map(fn($a) => [
                     'id'         => $a->id,

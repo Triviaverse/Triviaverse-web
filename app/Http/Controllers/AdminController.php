@@ -12,7 +12,7 @@ class AdminController extends Controller
 {
     public function index(): Response
     {
-        $users = User::all();  // vagy paginate(), ha sok lesz
+        $users = User::all(); 
         return Inertia::render('Admin/Index', [
             'users' => $users,
         ]);
