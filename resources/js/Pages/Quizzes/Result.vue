@@ -4,19 +4,16 @@
       <div class="w-full max-w-3xl bg-gray-800 p-6 rounded-xl shadow-lg">
         <h1 class="text-3xl font-bold mb-4 text-blue-400">Eredmények</h1>
   
-        <!-- Eredmény fejléce -->
         <div class="flex items-baseline mb-6 gap-4">
           <p class="text-xl">
             Eredmény:
             <span class="font-semibold">{{ displayScore }}%</span>
           </p>
-          <!-- ha van override, jelöljük -->
           <span v-if="quizResult.is_overridden" class="text-sm text-yellow-300">
             (Felülvizsgált)
           </span>
         </div>
   
-        <!-- Kérdések listája -->
         <div
           v-for="(question, i) in quiz.questions"
           :key="question.id || i"
@@ -31,7 +28,6 @@
             <span v-if="currentCorrect[i]" class="ml-3 text-green-400 text-2xl">✓</span>
             <span v-else class="ml-3 text-red-500 text-2xl">✗</span>
   
-            <!-- tanár/admin: felülírható -->
             <label
               v-if="isTeacher"
               class="ml-auto flex items-center gap-1 text-sm cursor-pointer"
@@ -50,7 +46,6 @@
           </p>
         </div>
   
-        <!-- Műveletek gombok -->
         <div class="text-center mt-8 flex justify-center gap-4">
           <Link
             href="/quizzes"
@@ -88,7 +83,6 @@
     setup(props) {
       const isTeacher = ['teacher', 'admin'].includes(props.user.role)
   
-      // 1) felhasználói válaszok
       const raw = Array.isArray(props.quizAttempt?.answers)
         ? props.quizAttempt.answers
         : []
@@ -104,7 +98,6 @@
         )
       )
   
-      // 2) correct override-ok
       const currentCorrect = ref(
         props.quiz.questions.map((q, i) => {
           const ans = userAnswers.value[i]
@@ -121,14 +114,12 @@
         })
       )
   
-      // 3) új százalék az override-okból
       const displayScore = computed(() => {
         const total = props.quiz.questions.length || 1
         const correctCnt = currentCorrect.value.filter(v => v).length
         return Math.round((correctCnt / total) * 100)
       })
   
-      // 4) mentés
       const saving = ref(false)
       function saveReview() {
         saving.value = true
@@ -142,7 +133,6 @@
         )
       }
   
-      // segédfüggvények
       function displayAnswer(question, answer) {
         if (question.type === 'multiple_choice') {
           const arr = Array.isArray(answer) ? answer : []

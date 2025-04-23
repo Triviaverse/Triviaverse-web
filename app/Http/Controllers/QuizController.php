@@ -235,7 +235,7 @@ class QuizController extends Controller
             'is_overridden'    => true,
         ]);
 
-        return redirect()->route('quizzes.result', [
+        return redirect()->route('dashboard', [
             'quiz'    => $quiz->id,
             'attempt' => $attempt->id,
         ]);
