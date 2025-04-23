@@ -6,6 +6,7 @@ use App\Models\Question;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
 use App\Models\QuizResult;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -13,32 +14,36 @@ use Inertia\Response;
 
 class QuizController extends Controller
 {
-    /**
-     * Quizzes listázása.
-     */
-    public function index(): Response
+    public function index(Request $request): Response
     {
-        $quizzes = Quiz::orderBy('created_at', 'desc')->get();
+        $user = Auth::user();
+
+        $query = Quiz::orderBy('created_at', 'desc');
+
+        if ($user->role === 'student') {
+            $query->whereDoesntHave('attempts', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
+        }
+
+        if ($search = $request->input('search')) {
+            $query->where('title', 'like', "%{$search}%");
+        }
+
+        $quizzes = $query->get();
 
         return Inertia::render('Quizzes/Index', [
-            'user'    => Auth::user(),
+            'user'    => $user,
             'quizzes' => $quizzes,
+            'filters' => ['search' => $search],
         ]);
     }
 
-    /**
-     * Új kvíz létrehozása form.
-     */
     public function create(): Response
     {
-        return Inertia::render('Quizzes/Create', [
-            'user' => Auth::user(),
-        ]);
+        return Inertia::render('Quizzes/Create', ['user' => Auth::user()]);
     }
 
-    /**
-     * Új kvíz mentése.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -50,7 +55,7 @@ class QuizController extends Controller
             'questions.*.type'           => 'required|in:multiple_choice,single_choice,text',
             'questions.*.options'        => 'required_if:questions.*.type,multiple_choice,single_choice|array|min:2',
             'questions.*.correctAnswers' => 'nullable|array',
-            'questions.*.defaultAnswer' => 'nullable|string',
+            'questions.*.defaultAnswer'  => 'nullable|string',
         ]);
 
         $quiz = Quiz::create([
@@ -62,11 +67,11 @@ class QuizController extends Controller
 
         foreach ($validated['questions'] as $q) {
             $quiz->questions()->create([
-                'question_text'  => $q['question_text'],
-                'type'           => $q['type'],
-                'options'        => $q['options'],                  
-                'correctAnswers' => $q['correctAnswers'] ?? [],  
-                'default_answer'  => $q['defaultAnswer'] ?? null, 
+                'question_text'   => $q['question_text'],
+                'type'            => $q['type'],
+                'options'         => $q['options'],
+                'correctAnswers'  => $q['correctAnswers'] ?? [],
+                'default_answer'  => $q['defaultAnswer'] ?? null,
             ]);
         }
 
@@ -74,47 +79,29 @@ class QuizController extends Controller
                          ->with('success', 'Kvíz sikeresen létrehozva!');
     }
 
-    /**
-     * Kvíz megtekintése.
-     */
     public function show(Quiz $quiz): Response
     {
-        // A Question modell $casts miatt a options és correctAnswers már tömb lesz
         $quiz->load('questions');
-
         return Inertia::render('Quizzes/Show', [
             'user' => Auth::user(),
             'quiz' => $quiz,
         ]);
     }
 
-    /**
-     * Kvíz szerkesztése form.
-     */
     public function edit(int $id): Response
     {
         $quiz = Quiz::with('questions')->findOrFail($id);
-
-        if ($quiz->created_by !== Auth::id()) {
-            abort(403, "Nincs jogosultságod a kvíz szerkesztéséhez.");
-        }
-
+        abort_if($quiz->created_by !== Auth::id() && Auth::user()->role !== 'admin', 403);
         return Inertia::render('Quizzes/Edit', [
             'user' => Auth::user(),
             'quiz' => $quiz,
         ]);
     }
 
-    /**
-     * Kvíz frissítése.
-     */
     public function update(Request $request, int $id)
     {
         $quiz = Quiz::findOrFail($id);
-
-        if ($quiz->created_by !== Auth::id()) {
-            abort(403, "Nincs jogosultságod a kvíz módosítására.");
-        }
+        abort_if($quiz->created_by !== Auth::id(), 403);
 
         $validated = $request->validate([
             'title'                      => 'required|string|max:255',
@@ -126,7 +113,7 @@ class QuizController extends Controller
             'questions.*.type'           => 'required|in:multiple_choice,single_choice,text',
             'questions.*.options'        => 'required_if:questions.*.type,multiple_choice,single_choice|array|min:2',
             'questions.*.correctAnswers' => 'nullable|array',
-            'questions.*.defaultAnswer' => 'nullable|string',
+            'questions.*.defaultAnswer'  => 'nullable|string',
         ]);
 
         $quiz->update([
@@ -137,23 +124,20 @@ class QuizController extends Controller
 
         foreach ($validated['questions'] as $q) {
             if (!empty($q['id'])) {
-                // Létező kérdés frissítése
-                $question = Question::findOrFail($q['id']);
-                $question->update([
+                Question::findOrFail($q['id'])->update([
                     'question_text'  => $q['question_text'],
                     'type'           => $q['type'],
                     'options'        => $q['options'],
                     'correctAnswers' => $q['correctAnswers'] ?? [],
-                    'default_answer'  => $q['defaultAnswer'] ?? null,
+                    'default_answer' => $q['defaultAnswer'] ?? null,
                 ]);
             } else {
-                // Új kérdés
                 $quiz->questions()->create([
                     'question_text'  => $q['question_text'],
                     'type'           => $q['type'],
                     'options'        => $q['options'],
                     'correctAnswers' => $q['correctAnswers'] ?? [],
-                    'default_answer'  => $q['defaultAnswer'] ?? null,
+                    'default_answer' => $q['defaultAnswer'] ?? null,
                 ]);
             }
         }
@@ -162,145 +146,146 @@ class QuizController extends Controller
                          ->with('success', 'Kvíz sikeresen frissítve.');
     }
 
-    /**
-     * Kvíz törlése.
-     */
     public function destroy(int $id)
     {
         $quiz = Quiz::findOrFail($id);
 
-        if (Auth::user()->role === 'teacher' && $quiz->created_by === Auth::id()) {
+        if (
+            (Auth::user()->role === 'teacher' && $quiz->created_by === Auth::id())
+            || Auth::user()->role === 'admin'
+        ) {
             $quiz->delete();
             return redirect()->route('quizzes.index')
                              ->with('success', 'Kvíz sikeresen törölve.');
         }
 
-        return redirect()->route('quizzes.index')
-                         ->with('error', 'Nincs jogosultságod törölni ezt a kvízt.');
+        abort(403, 'Nincs jogosultságod törölni ezt a kvízt.');
     }
 
-    /**
-     * Kvíz kitöltése (start).
-     */
     public function start(int $id): Response
     {
         $quiz = Quiz::with('questions')->findOrFail($id);
-
         return Inertia::render('Quizzes/Show', [
             'user' => Auth::user(),
             'quiz' => $quiz,
         ]);
     }
 
-    /**
-     * Kvíz válaszainak beküldése és elmentése.
-     */
-    public function submitAnswer(Request $request, int $id)
+    public function submitAnswer(Request $request, int $id): Response
     {
-        $quiz = Quiz::findOrFail($id);
+        $quiz      = Quiz::with('questions')->findOrFail($id);
+        $validated = $request->validate(['answers' => 'required|array']);
 
-        $validated = $request->validate([
-            'answers' => 'required|array',
-        ]);
-
-        // Százalékos eredmény kiszámítása
         $percentage = $this->calculatePercentageGrade($quiz, $validated['answers']);
 
-        // Mentés
-        $quizAttempt = $quiz->attempts()->create([
+        $quizAttempt = QuizAttempt::create([
+            'quiz_id'   => $quiz->id,
             'user_id'   => Auth::id(),
             'score'     => $percentage,
-            'answers'   => json_encode($validated['answers']),
+            'answers'   => $validated['answers'],  // cast-olja JSON-be
             'completed' => true,
         ]);
 
         $quizResult = QuizResult::create([
-            'quiz_attempt_id' => $quizAttempt->id,
-            'score_percentage'=> $percentage,
-         ]);         
+            'quiz_attempt_id'  => $quizAttempt->id,
+            'score_percentage' => $percentage,
+        ]);
 
-        // Mindig Inertia-komponensként térünk vissza:
         return Inertia::render('Quizzes/SubmitAnswer', [
             'user'        => Auth::user(),
             'quiz'        => $quiz,
             'quizAttempt' => $quizAttempt,
-            'quizResult' => $quizResult,
+            'quizResult'  => $quizResult,
         ]);
     }
 
-    public function showResult(int $id): Response
+    public function showResult(Quiz $quiz, QuizAttempt $attempt): Response
     {
-        $quiz = Quiz::with('questions')->findOrFail($id);
+        $quiz->load('questions');
 
-        // Ha diák, akkor csak a saját legutóbbi próbálkozása
-        $attempt = $quiz->attempts()
-                        ->where('user_id', Auth::id())
-                        ->latest()
-                        ->firstOrFail();
-
-        // Feltételezzük, hogy van kapcsolódó QuizResult modell
-        $result = $attempt->results; 
+        // jogosultság-ok
+        if (Auth::user()->role === 'student' && $attempt->user_id !== Auth::id()) {
+            abort(403);
+        }
+        if (in_array(Auth::user()->role, ['teacher','admin'])
+            && $quiz->created_by !== Auth::id()) {
+            abort(403);
+        }
 
         return Inertia::render('Quizzes/Result', [
             'user'        => Auth::user(),
             'quiz'        => $quiz,
             'quizAttempt' => $attempt,
-            'quizResult'  => $result,
+            'quizResult'  => $attempt->result,
         ]);
     }
 
-    /**
-     * Segédfüggvény: százalékos pontszám.
-     */
+    public function review(Request $request, Quiz $quiz, QuizAttempt $attempt): RedirectResponse
+    {
+        abort_unless(in_array(Auth::user()->role, ['teacher','admin']), 403);
+
+        $data = $request->validate(['overrides' => 'required|array']);
+        $result  = $attempt->result;
+        $total   = $quiz->questions()->count();
+        $correct = collect($data['overrides'])->filter()->count();
+        $newScore = $total ? (int) round($correct / $total * 100) : 0;
+
+        $result->update([
+            'score_percentage' => $newScore,
+            'is_overridden'    => true,
+        ]);
+
+        return redirect()->route('quizzes.result', [
+            'quiz'    => $quiz->id,
+            'attempt' => $attempt->id,
+        ]);
+    }
+
     private function calculatePercentageGrade(Quiz $quiz, array $answers): int
     {
-        // Tetszőleges logika, vagy maradhat a placeholder
         $total      = $quiz->questions->count();
         $correctCnt = 0;
 
         foreach ($quiz->questions as $idx => $question) {
-            if ($question->type === 'multiple_choice' || $question->type === 'single_choice') {
-                if (isset($answers[$idx]) && $question->correctAnswers == $answers[$idx]) {
+            $ans = $answers[$idx] ?? null;
+            if (in_array($question->type, ['multiple_choice','single_choice'], true)) {
+                if ($question->correctAnswers == $ans) {
+                    $correctCnt++;
+                }
+            } elseif ($question->type === 'text') {
+                $u = trim(strtolower((string)$ans));
+                $c = trim(strtolower((string)$question->default_answer));
+                if ($u && $c && $u === $c) {
                     $correctCnt++;
                 }
             }
-            // Beírós kérdés esetén itt jöhet a saját logika...
         }
 
-        return $total > 0
-            ? (int) round($correctCnt / $total * 100)
-            : 0;
+        return $total ? (int) round($correctCnt / $total * 100) : 0;
     }
 
     public function myResults(): Response
     {
-        $user = Auth::user();
-
-        $totalQuizzes = Quiz::count();
-
-        $attempts = QuizAttempt::with(['quiz', 'results'])
-            ->where('user_id', $user->id)
-            ->get()
-            ->map(function($attempt) {
-                return [
-                    'id'         => $attempt->id,
-                    'quiz'       => $attempt->quiz,
-                    'quizResult' => [
-                        'score_percentage' => $attempt->results?->score_percentage ?? 0,
-                    ],
-                ];
-            });
+        $user    = Auth::user();
+        $total   = Quiz::count();
+        $attempts = QuizAttempt::with(['quiz','result'])
+                   ->where('user_id',$user->id)
+                   ->get();
 
         $stats = [
-            'totalQuizzes'     => $totalQuizzes,
+            'totalQuizzes'     => $total,
             'completedQuizzes' => $attempts->count(),
-            'pendingQuizzes'   => $totalQuizzes - $attempts->count(),
+            'pendingQuizzes'   => $total - $attempts->count(),
         ];
 
         return Inertia::render('ResultsIndex', [
             'user'     => $user,
             'stats'    => $stats,
-            'attempts' => $attempts,
+            'attempts' => $attempts->map(fn($a)=>[
+                'id'          => $a->id,
+                'quiz'        => $a->quiz,
+                'quizResult'  => $a->result,
+            ]),
         ]);
     }
 }

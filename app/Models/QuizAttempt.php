@@ -4,15 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\User;
-use App\Models\Quiz;
-use App\Models\QuizResult;
 
 class QuizAttempt extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['quiz_id', 'user_id', 'completed'];
+    protected $fillable = [
+        'quiz_id',
+        'user_id',
+        'score',
+        'answers',
+        'completed',
+    ];
+
+    protected $casts = [
+        'answers'   => 'array',  
+        'completed' => 'boolean',
+        'score'     => 'integer',
+    ];
 
     public function quiz()
     {
@@ -24,7 +33,7 @@ class QuizAttempt extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function results()
+    public function result()
     {
         return $this->hasOne(QuizResult::class);
     }

@@ -8,41 +8,54 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Display the user's profile form.
-     */
+    /** Show the "Edit profile" page */
     public function edit(Request $request): Response
     {
         return Inertia::render('Profile/Edit', [
+            'user'            => $request->user(),
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
-            'status' => session('status'),
+            'status'          => session('status'),
         ]);
     }
 
-    /**
-     * Update the user's profile information.
-     */
+    /** Handle profile info & picture update */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $data = $request->validated();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // reset email verification if needed
+        if (isset($data['email']) && $data['email'] !== $user->email) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        // Csak akkor írjuk felül a profile_picture-t, ha valóban feltöltés történt
+        if ($request->hasFile('profile_picture')) {
+            // régi kép törlése
+            if ($user->profile_picture) {
+                Storage::disk('public')->delete($user->profile_picture);
+            }
+            // új kép tárolása
+            $data['profile_picture'] = $request
+                ->file('profile_picture')
+                ->store('profile_pictures', 'public');
+        } else {
+            // ha nincs új fájl, ne legyen null kulcs a data-ban
+            unset($data['profile_picture']);
+        }
 
-        return Redirect::route('profile.edit');
+        $user->fill($data)->save();
+
+        return Redirect::route('profile.edit')
+            ->with('status', 'profile-updated');
     }
 
-    /**
-     * Delete the user's account.
-     */
     public function destroy(Request $request): RedirectResponse
     {
         $request->validate([
@@ -52,6 +65,10 @@ class ProfileController extends Controller
         $user = $request->user();
 
         Auth::logout();
+
+        if ($user->profile_picture) {
+            Storage::disk('public')->delete($user->profile_picture);
+        }
 
         $user->delete();
 

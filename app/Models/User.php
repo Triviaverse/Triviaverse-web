@@ -23,7 +23,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role'
+        'role',
+        'profile_picture',
     ];
 
     /**
@@ -55,5 +56,12 @@ class User extends Authenticatable
 
     public function attempts() {
         return $this->hasMany(QuizAttempt::class);
+    }
+
+    public function getProfilePictureUrlAttribute(): ?string
+    {
+        return $this->profile_picture
+            ? asset('storage/' . $this->profile_picture)
+            : null;
     }
 }

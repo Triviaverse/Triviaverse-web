@@ -60,7 +60,7 @@
   
       <div class="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg">
         <span v-if="timeLeft === null">Nincs időkorlát</span>
-        <span v-else>{{ formattedTime }}</span>
+        <span v-else>Hátralévő idő: {{ formattedTime }}</span>
       </div>
     </div>
   </template>

@@ -13,33 +13,50 @@ class DashboardController extends Controller
     public function index(): Response
     {
         $user = Auth::user();
-
         $totalQuizzes = Quiz::count();
 
-        $attempts = QuizAttempt::with(['quiz', 'results'])
+        // Saját kitöltések (override-olt eredménnyel)
+        $myAttempts = QuizAttempt::with(['quiz', 'result'])
             ->where('user_id', $user->id)
             ->get()
-            ->map(function($attempt) {
-                return [
-                    'id'         => $attempt->id,
-                    'quiz'       => $attempt->quiz,
+            ->map(fn($attempt) => [
+                'id' => $attempt->id,
+                'quiz' => $attempt->quiz,
+                'quizResult' => [
+                    'score_percentage' => $attempt->result?->score_percentage ?? 0,
+                    'is_overridden'    => $attempt->result?->is_overridden ?? false,
+                ],
+            ]);
+
+        // Diákok kitöltései az általad létrehozott kvízekre (tanár/admin számára)
+        $studentResults = collect();
+        if ($user->role !== 'student') {
+            $studentResults = QuizAttempt::with(['quiz', 'user', 'result'])
+                ->whereHas('quiz', fn($q) => $q->where('created_by', $user->id))
+                ->where('user_id', '!=', $user->id)
+                ->get()
+                ->map(fn($a) => [
+                    'id'         => $a->id,
+                    'quiz'       => $a->quiz,
+                    'student'    => $a->user,
                     'quizResult' => [
-                        // Ha nincs kapcsolódó eredmény, 0-t adunk
-                        'score_percentage' => $attempt->results?->score_percentage ?? 0,
+                        'score_percentage' => $a->result?->score_percentage ?? 0,
+                        'is_overridden'    => $a->result?->is_overridden ?? false,
                     ],
-                ];
-            });
+                ]);
+        }
 
         $stats = [
             'totalQuizzes'     => $totalQuizzes,
-            'completedQuizzes' => $attempts->count(),
-            'pendingQuizzes'   => $totalQuizzes - $attempts->count(),
+            'completedQuizzes' => $myAttempts->count(),
+            'pendingQuizzes'   => $totalQuizzes - $myAttempts->count(),
         ];
 
         return Inertia::render('Dashboard', [
-            'user'     => $user,
-            'stats'    => $stats,
-            'attempts' => $attempts,
+            'user'           => $user,
+            'stats'          => $stats,
+            'attempts'       => $myAttempts,
+            'studentResults' => $studentResults,
         ]);
     }
 }

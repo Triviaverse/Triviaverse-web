@@ -9,7 +9,7 @@
       </div>
     </transition>
 
-    <div class="w-full max-w-3xl bg-gray-800 p-6 rounded-xl shadow-lg mt-16">
+    <div class="w-full max-w-3xl bg-gray-800 p-6 rounded-xl shadow-lg mt-5">
       <h1 class="text-3xl font-bold mb-6 text-blue-400">Új kvíz létrehozása</h1>
 
       <form @submit.prevent="submitQuiz">

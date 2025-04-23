@@ -1,22 +1,7 @@
 <template>
   <Navbar v-if="user" :user="user" />
   <div class="p-8 bg-gray-900 min-h-screen text-white">
-    <div class="max-w-5xl mx-auto">
-
-      <!-- Üdvözlés + Frissítés -->
-      <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-6 flex justify-between items-center">
-        <div>
-          <h1 class="text-3xl font-semibold">Eredményeim, {{ user.name }}!</h1>
-          <p class="text-gray-400">
-            Szerepkör: <span class="font-bold text-blue-400">{{ user.role }}</span>
-          </p>
-        </div>
-        <button
-          @click="reload"
-          class="bg-blue-500 text-white px-5 py-3 rounded-lg shadow-md hover:bg-blue-600 transition"
-        >🔄 Frissítés</button>
-      </div>
-
+    <div class="container mx-auto">
       <!-- Statisztikák -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 text-center">
         <div class="bg-blue-600 p-6 rounded-xl shadow-md">
@@ -33,30 +18,74 @@
         </div>
       </div>
 
-      <!-- Eredményeim kártyái -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <!-- Üdvözlés + Frissítés -->
+      <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-6 flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-semibold">Eredményeim, {{ user.name }}!</h1>
+          <p class="text-gray-400">
+            Szerepkör: <span class="font-bold text-blue-400">{{ user.role }}</span>
+          </p>
+        </div>
+        <button
+          @click="reload"
+          class="bg-blue-500 text-white px-5 py-3 rounded-lg shadow-md hover:bg-blue-600 transition"
+        >🔄 Frissítés</button>
+      </div>
+
+      <!-- Saját eredményeim kártyái -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
         <div
-          v-for="attempt in attempts"
-          :key="attempt.id"
-          :class="['p-6 rounded-xl shadow-md flex justify-between items-center', bgClass(attempt.quizResult.score_percentage)]"
+          v-for="att in attempts"
+          :key="att.id"
+          :class="['p-6 rounded-xl shadow-md flex justify-between items-center', bgClass(att.quizResult.score_percentage)]"
         >
           <div>
-            <h2 class="text-xl font-semibold">{{ attempt.quiz.title }}</h2>
+            <h2 class="text-xl font-semibold">{{ att.quiz.title }}</h2>
             <p class="mt-2">
-              Eredmény:
-              <span class="font-bold">{{ attempt.quizResult.score_percentage }}%</span>
+              Eredmény: <span class="font-bold">{{ att.quizResult.score_percentage }}%</span>
+              <span v-if="att.quizResult.is_overridden" class="text-sm text-yellow-300">(Felülvizsgált)</span>
             </p>
           </div>
           <button
-            @click="viewResult(attempt.quiz.id)"
-            class="bg-white text-gray-900 px-4 py-2 rounded hover:bg-gray-200 transition"
+            @click="viewResult(att.quiz.id, att.id)"
+            class="bg-white text-gray-900 px-4 py-2 rounded hover:bg-gray-200"
           >Megtekintés</button>
         </div>
+      </div>
 
-        <div v-if="!attempts.length" class="col-span-full text-center text-gray-400">
-          Nincsenek még kitöltött teszteredményeid.
+        <!-- Diákok eredményei (teacher/admin) -->
+        <div v-if="studentResults.length" class="mt-8">
+          <div class="bg-gray-800 p-6 rounded-xl shadow-lg mb-6 flex justify-between items-center">
+          <div>
+            <h1 class="text-3xl font-semibold">Diákok eredményei</h1>
+          </div>
+          <button
+            @click="reload"
+            class="bg-blue-500 text-white px-5 py-3 rounded-lg shadow-md hover:bg-blue-600 transition"
+          >🔄 Frissítés</button>
+        </div>        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div
+            v-for="sr in studentResults"
+            :key="sr.id"
+            :class="['p-6 rounded-xl shadow-md flex justify-between items-center', bgClass(sr.quizResult.score_percentage)]"
+          >
+            <div>
+              <h2 class="text-xl font-semibold">{{ sr.quiz.title }}</h2>
+              <p class="text-gray-200">Diák: <span class="font-bold">{{ sr.student.name }}</span></p>
+              <p class="mt-1">
+                <span class="font-bold">{{ sr.quizResult.score_percentage }}%</span>
+                <span v-if="sr.quizResult.is_overridden" class="text-sm text-yellow-300">(Felülvizsgált)</span>
+              </p>
+            </div>
+            <button
+              @click="viewResult(sr.quiz.id, sr.id)"
+              class="bg-white text-gray-900 px-4 py-2 rounded hover:bg-gray-200"
+            >Megtekintés</button>
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -66,18 +95,16 @@ import Navbar from '@/Components/Navbar.vue';
 import { router } from '@inertiajs/vue3';
 
 export default {
-  components: { Navbar },
   props: {
-    user:     { type: Object, required: true },
-    stats:    { type: Object, required: true },
-    attempts: { type: Array,  required: true },
+    user:           { type: Object, required: true },
+    stats:          { type: Object, required: true },
+    attempts:       { type: Array,  required: true },
+    studentResults: { type: Array,  default: () => [] },
   },
+  components: { Navbar },
   methods: {
-    reload() {
-      router.reload({ only: ['stats','attempts'] });
-    },
-    viewResult(quizId) {
-      router.get(`/quizzes/${quizId}/result`);
+    viewResult(quizId, attemptId) {
+      router.get(route('quizzes.result', { quiz: quizId, attempt: attemptId }));
     },
     bgClass(score) {
       if (score <= 25) return 'bg-red-600';
@@ -90,5 +117,5 @@ export default {
 </script>
 
 <style scoped>
-/* A reszponzív rács és kártya-színek Tailwind-del kezelve */
+/* Tailwind-osztályokkal minden stílus már kész */
 </style>
