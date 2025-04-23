@@ -21,6 +21,9 @@ return new class extends Migration
             $table->timestamps();
         });
         
+        Schema::table('questions', function (Blueprint $table) {
+            $table->string('default_answer')->nullable()->after('correctAnswers');
+        });
     }
 
     /**

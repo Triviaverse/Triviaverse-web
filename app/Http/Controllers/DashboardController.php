@@ -2,34 +2,44 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Quiz;
 use App\Models\QuizAttempt;
+use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(): Response
     {
         $user = Auth::user();
 
-        // Statisztikák lekérdezése
         $totalQuizzes = Quiz::count();
-        $completedQuizzes = QuizAttempt::where('user_id', $user->id)->where('completed', true)->count();
-        $pendingQuizzes = Quiz::whereDoesntHave('attempts', function ($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->count();
+
+        $attempts = QuizAttempt::with(['quiz', 'results'])
+            ->where('user_id', $user->id)
+            ->get()
+            ->map(function($attempt) {
+                return [
+                    'id'         => $attempt->id,
+                    'quiz'       => $attempt->quiz,
+                    'quizResult' => [
+                        // Ha nincs kapcsolódó eredmény, 0-t adunk
+                        'score_percentage' => $attempt->results?->score_percentage ?? 0,
+                    ],
+                ];
+            });
+
+        $stats = [
+            'totalQuizzes'     => $totalQuizzes,
+            'completedQuizzes' => $attempts->count(),
+            'pendingQuizzes'   => $totalQuizzes - $attempts->count(),
+        ];
 
         return Inertia::render('Dashboard', [
-            'user' => $user,
-            'stats' => [
-                'totalQuizzes' => $totalQuizzes,
-                'completedQuizzes' => $completedQuizzes,
-                'pendingQuizzes' => $pendingQuizzes,
-            ],
-            'quizzes' => Quiz::all() ?? [], 
+            'user'     => $user,
+            'stats'    => $stats,
+            'attempts' => $attempts,
         ]);
     }
 }
-

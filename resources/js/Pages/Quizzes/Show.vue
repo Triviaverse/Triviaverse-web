@@ -1,78 +1,144 @@
 <template>
-    <Navbar :user="user" />
-    <div class="p-8 bg-gray-900 min-h-screen text-white">
-        <div class="max-w-4xl mx-auto">
-            <h1 class="text-3xl font-bold text-blue-400 mb-6">{{ quiz.title }}</h1>
-            <p class="text-gray-400 mb-4">{{ quiz.description }}</p>
-            <p class="text-sm text-gray-500 mb-6">
-                ⏳ Időlimit: {{ quiz.time_limit ? quiz.time_limit + ' perc' : 'Nincs időkorlát' }}
-            </p>
-
-            <form @submit.prevent="submitQuiz">
-                <div v-for="(question, index) in quiz.questions" :key="index" class="mb-6">
-                    <h2 class="text-lg font-semibold text-blue-300">{{ index + 1 }}. {{ question.question_text }}</h2>
-                    <div v-if="question.type === 'multiple_choice'" class="mt-2">
-                        <div v-for="(option, optIndex) in question.options" :key="optIndex"
-                            class="flex items-center mb-2">
-                            <input type="checkbox" :id="`question-${index}-option-${optIndex}`" :value="option"
-                                v-model="answers[index]" class="mr-2" />
-                            <label :for="`question-${index}-option-${optIndex}`" class="text-gray-400">{{ option
-                                }}</label>
-                        </div>
-                    </div>
-                    <div v-else class="mt-2">
-                        <input type="text" v-model="answers[index]" class="w-full bg-gray-800 text-white p-2 rounded-lg"
-                            placeholder="Írd be a válaszod..." />
-                    </div>
-                </div>
-
-                <button type="submit"
-                    class="w-full bg-green-500 text-white px-5 py-3 rounded-lg shadow-md hover:bg-green-600 transition">
-                    Beküldés
-                </button>
-            </form>
+    <Navbar v-if="user" :user="user" />
+    <div class="relative p-8 bg-gray-900 min-h-screen text-white">
+      <div class="max-w-3xl mx-auto bg-gray-800 p-6 rounded-xl shadow-lg">
+        <h1 class="text-3xl font-bold mb-4 text-blue-400">{{ quiz.title }}</h1>
+        <p class="mb-6 text-gray-300">{{ quiz.description }}</p>
+  
+        <form v-if="!showResultPopup && canAttempt" @submit.prevent="submitQuiz">
+          <div v-for="(question, i) in quiz.questions" :key="question.id || i" class="mb-6">
+            <p class="font-semibold text-gray-200">{{ i + 1 }}. {{ question.question_text }}</p>
+  
+            <div v-if="question.type === 'multiple_choice'" class="mt-2 space-y-2">
+              <label v-for="(opt, idx) in question.options" :key="idx" class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  :value="idx"
+                  v-model="answers[i]"
+                  class="accent-blue-500"
+                />
+                <span>{{ opt }}</span>
+              </label>
+            </div>
+  
+            <div v-if="question.type === 'single_choice'" class="mt-2 space-y-2">
+              <label v-for="(opt, idx) in question.options" :key="idx" class="flex items-center gap-2">
+                <input
+                  type="radio"
+                  :value="idx"
+                  v-model="answers[i]"
+                  class="accent-blue-500"
+                />
+                <span>{{ opt }}</span>
+              </label>
+            </div>
+  
+            <div v-if="question.type === 'text'" class="mt-2">
+              <input
+                type="text"
+                v-model="answers[i]"
+                class="w-full bg-gray-700 text-white p-2 rounded border border-gray-600 focus:ring focus:ring-blue-500"
+              />
+            </div>
+          </div>
+  
+          <div class="mt-6">
+            <button
+              type="submit"
+              class="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
+            >Beküldés</button>
+          </div>
+        </form>
+  
+        <div v-if="showResultPopup" class="text-center">
+          <button
+            @click="goToResult"
+            class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition"
+          >Eredményem megtekintése</button>
         </div>
+      </div>
+  
+      <div class="fixed bottom-4 right-4 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg">
+        <span v-if="timeLeft === null">Nincs időkorlát</span>
+        <span v-else>{{ formattedTime }}</span>
+      </div>
     </div>
-</template>
-
-<script>
-import Navbar from "@/Components/Navbar.vue";
-import { router } from "@inertiajs/vue3";
-
-export default {
-    components: {
-        Navbar,
-    },
+  </template>
+  
+  <script>
+  import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
+  import { router } from '@inertiajs/vue3';
+  import Navbar from '@/Components/Navbar.vue';
+  
+  export default {
+    components: { Navbar },
     props: {
-        user: {
-            type: Object,
-            required: true,
-        },
-        quiz: {
-            type: Object,
-            required: true,
-        },
+      user: Object,
+      quiz: Object,
+      quizAttempt: { type: Object, default: null },
     },
-    data() {
-        return {
-            answers: [],
-        };
+    setup(props) {
+      const isStudent = props.user.role === 'student';
+      const hasAttempt = props.quizAttempt !== null;
+      const canAttempt = !(isStudent && hasAttempt);
+      const showResultPopup = ref(false);
+  
+      const answers = ref(
+        props.quizAttempt
+          ? JSON.parse(props.quizAttempt.answers)
+          : props.quiz.questions.map(q => (q.type === 'multiple_choice' ? [] : q.type === 'single_choice' ? null : ''))
+      );
+  
+      const timeLeft = ref(props.quiz.time_limit ? props.quiz.time_limit * 60 : null);
+      let timer;
+  
+      const formattedTime = computed(() => {
+        const m = Math.floor(timeLeft.value / 60);
+        const s = timeLeft.value % 60;
+        return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+      });
+  
+      function tick() {
+        if (timeLeft.value > 0) {
+          timeLeft.value--;
+        } else {
+          clearInterval(timer);
+          if (canAttempt) submitQuiz();
+        }
+      }
+  
+      onMounted(() => {
+        if (timeLeft.value !== null && canAttempt) {
+          timer = setInterval(tick, 1000);
+        }
+      });
+      onBeforeUnmount(() => clearInterval(timer));
+  
+      function submitQuiz() {
+        clearInterval(timer);
+        router.post(
+          route('quizzes.submitAnswer', { id: props.quiz.id }),
+          { answers: answers.value },
+          {
+            onSuccess: () => { showResultPopup.value = true; },
+          }
+        );
+      }
+  
+      function goToResult() {
+        router.get(route('quizzes.result', { quiz: props.quiz.id }), {}, { preserveState:false, preserveScroll:true });
+      }
+  
+      return { canAttempt, answers, timeLeft, formattedTime, showResultPopup, submitQuiz, goToResult };
     },
-    methods: {
-        submitQuiz() {
-            router.post(route("quizzes.submitAnswer", { id: this.quiz.id }), {
-                answers: this.answers,
-            });
-        },
-    },
-    mounted() {
-        console.log(this.quiz);
-    },
-};
-</script>
-
-<style scoped>
-input[type="checkbox"] {
-    accent-color: #3b82f6;
-}
-</style>
+  };
+  </script>
+  
+  <style scoped>
+  .slide-fade-enter-active,
+  .slide-fade-leave-active { transition: all 0.3s ease; }
+  .slide-fade-enter-from,
+  .slide-fade-leave-to { opacity:0; transform: translateY(-10px); }
+  .slide-fade-enter-to,
+  .slide-fade-leave-from { opacity:1; transform: translateY(0); }
+  </style>

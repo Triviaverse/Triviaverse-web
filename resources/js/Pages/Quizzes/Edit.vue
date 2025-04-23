@@ -1,218 +1,229 @@
 <template>
-    <Navbar v-if="user" :user="user" />
-    <div class="p-8 bg-gray-900 min-h-screen text-white flex justify-center">
-      <div class="w-full bg-gray-800 p-6 rounded-xl shadow-lg">
-        <h1 class="text-3xl font-bold mb-6 text-blue-400">Kvíz szerkesztése</h1>
-        <p v-if="errorMessage" class="text-red-500 text-sm mb-4">{{ errorMessage }}</p>
-  
-        <form @submit.prevent="submitQuiz">
-          <!-- Kvíz címe -->
-          <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-300">Kvíz címe</label>
-            <input 
-              v-model="quiz.title" 
-              type="text" 
-              class="w-full bg-gray-900 text-white rounded-lg p-3 mt-2 border border-gray-600 focus:ring focus:ring-blue-500" 
-              required
-            >
-          </div>
-  
-          <!-- Kvíz leírása -->
-          <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-300">Leírás</label>
-            <textarea 
-              v-model="quiz.description" 
-              class="w-full bg-gray-900 text-white rounded-lg p-3 mt-2 border border-gray-600 focus:ring focus:ring-blue-500"
-            ></textarea>
-          </div>
-  
-          <!-- Időlimit -->
-          <div class="mb-5">
-            <label class="block text-sm font-semibold text-gray-300">Időlimit (percben, opcionális)</label>
-            <input 
-              v-model="quiz.time_limit" 
-              type="number" 
-              min="1" 
-              class="w-full bg-gray-900 text-white rounded-lg p-3 mt-2 border border-gray-600 focus:ring focus:ring-blue-500"
-            >
-          </div>
-  
-          <!-- Kérdések -->
-          <div class="mb-5">
-            <h2 class="text-2xl font-semibold text-blue-400">Kérdések</h2>
-  
-            <div 
-              v-for="(question, index) in quiz.questions" 
-              :key="question.id" 
-              class="bg-gray-900 p-5 rounded-xl shadow-md mt-5"
-            >
-              <label class="block text-sm font-semibold text-gray-300">
-                Kérdés {{ index + 1 }}
-              </label>
-              <input 
-                v-model="question.question_text" 
-                type="text" 
-                class="w-full bg-gray-800 text-white rounded-lg p-3 mt-2 border border-gray-600 focus:ring focus:ring-blue-500"
-                required
-              >
-  
-              <!-- Kérdés típusa -->
-              <div class="mt-3">
-                <label class="text-sm font-semibold text-gray-300">Típus:</label>
-                <select 
-                  v-model="question.type" 
-                  class="w-full bg-gray-800 text-white p-3 rounded-lg border border-gray-600 focus:ring focus:ring-blue-500"
-                >
-                  <option value="multiple_choice">Feleletválasztós</option>
-                  <option value="text">Beírós</option>
-                </select>
-              </div>
-  
-              <!-- Feleletválasztós opciók -->
-              <div v-if="question.type === 'multiple_choice'" class="mt-4">
-                <h3 class="text-sm font-semibold text-gray-300">Válaszlehetőségek</h3>
-                
-                <div 
-                  v-for="(option, optIndex) in question.options" 
-                  :key="optIndex" 
-                  class="flex items-center gap-3 mt-2"
-                >
-                  <!-- Válaszlehetőség mező -->
-                  <input 
-                    v-model="question.options[optIndex]" 
-                    type="text" 
-                    class="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-600 focus:ring focus:ring-blue-500"
-                  >
-  
-                  <!-- Helyes válasz checkbox -->
-                  <input 
-                    type="checkbox" 
-                    :checked="question.correctAnswers.includes(option)" 
-                    @change="toggleCorrectAnswer(question, option)" 
-                    class="accent-blue-500"
-                  >
-  
-                  <!-- 🔹 Törlés gomb -->
-                  <button 
-                    v-if="question.options.length > 2"
-                    @click.prevent="removeOption(index, optIndex)" 
-                    class="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition"
-                  >
-                    -
-                  </button>
-                </div>
-  
-                <!-- Új válasz hozzáadása -->
-                <button 
-                  @click.prevent="addOption(index)" 
-                  class="mt-3 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
-                >
-                  + Új válasz
-                </button>
-              </div>
-  
-              <!-- Kérdés törlése -->
-              <button 
-                @click.prevent="removeQuestion(index)" 
-                class="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
-              >
-                Törlés
-              </button>
-            </div>
-          </div>
-  
-          <!-- Kérdés hozzáadása -->
-          <button 
-            @click.prevent="addQuestion" 
-            class="w-4xl bg-blue-500 text-white px-5 py-3 rounded-lg shadow-md hover:bg-blue-600 transition"
-          >
-            + Kérdés hozzáadása
-          </button>
-  
-          <!-- Mentés -->
-          <button 
-            type="submit" 
-            class="mt-6 w-full bg-green-500 text-white px-5 py-3 rounded-lg shadow-md hover:bg-green-600 transition"
-          >
-            Mentés
-          </button>
-        </form>
+  <Navbar v-if="user" :user="user" />
+  <div class="relative p-8 bg-gray-900 min-h-screen text-white flex justify-center">
+    <!-- Custom Alert Popup -->
+    <transition name="slide-fade">
+      <div
+        v-show="alert.visible"
+        class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 bg-red-600 text-white p-6 rounded-lg shadow-xl z-50 flex flex-col items-center"
+      >
+        <span class="mb-4 text-center">{{ alert.message }}</span>
+        <button @click="alert.visible = false" class="mt-2 bg-white text-red-600 font-bold px-4 py-2 rounded hover:bg-gray-100">Bezár</button>
       </div>
+    </transition>
+
+    <div class="w-full max-w-3xl bg-gray-800 p-6 rounded-xl shadow-lg mt-16">
+      <h1 class="text-3xl font-bold mb-6 text-blue-400">Kvíz szerkesztése</h1>
+
+      <form @submit.prevent="submitQuiz">
+        <!-- Kvíz címe -->
+        <div class="mb-5">
+          <label class="block text-sm font-semibold text-gray-300">Kvíz címe</label>
+          <input
+            v-model="quiz.title"
+            type="text"
+            class="w-full bg-gray-900 text-white rounded-lg p-3 mt-2 border border-gray-600 focus:ring focus:ring-blue-500"
+            required
+          />
+        </div>
+
+        <!-- Kvíz leírása -->
+        <div class="mb-5">
+          <label class="block text-sm font-semibold text-gray-300">Leírás</label>
+          <textarea
+            v-model="quiz.description"
+            class="w-full bg-gray-900 text-white rounded-lg p-3 mt-2 border border-gray-600 focus:ring focus:ring-blue-500"
+          ></textarea>
+        </div>
+
+        <!-- Időlimit -->
+        <div class="mb-5">
+          <label class="block text-sm font-semibold text-gray-300">Időlimit (percben, opcionális)</label>
+          <input
+            v-model="quiz.time_limit"
+            type="number"
+            min="1"
+            class="w-full bg-gray-900 text-white rounded-lg p-3 mt-2 border border-gray-600 focus:ring focus:ring-blue-500"
+          />
+        </div>
+
+        <!-- Kérdések -->
+        <div class="mb-5">
+          <h2 class="text-2xl font-semibold text-blue-400">Kérdések</h2>
+
+          <div
+            v-for="(question, index) in quiz.questions"
+            :key="question.id || index"
+            class="bg-gray-900 p-5 rounded-xl shadow-md mt-5"
+          >
+            <label class="block text-sm font-semibold text-gray-300">Kérdés {{ index + 1 }}</label>
+            <input
+              v-model="question.question_text"
+              type="text"
+              class="w-full bg-gray-800 text-white rounded-lg p-3 mt-2 border border-gray-600 focus:ring focus:ring-blue-500"
+              required
+            />
+
+            <!-- Kérdés típusa -->
+            <div class="mt-3">
+              <label class="text-sm font-semibold text-gray-300">Típus:</label>
+              <select
+                v-model="question.type"
+                class="w-full bg-gray-800 text-white p-3 rounded-lg border border-gray-600 focus:ring focus:ring-blue-500"
+              >
+                <option value="multiple_choice">Feleletválasztós</option>
+                <option value="text">Beírós</option>
+              </select>
+            </div>
+
+            <!-- Feleletválasztós opciók -->
+            <div v-if="question.type === 'multiple_choice'" class="mt-4">
+              <h3 class="text-sm font-semibold text-gray-300">Válaszlehetőségek</h3>
+              <div
+                v-for="(option, optIndex) in question.options"
+                :key="optIndex"
+                class="flex items-center gap-3 mt-2"
+              >
+                <input
+                  v-model="question.options[optIndex]"
+                  type="text"
+                  class="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-600 focus:ring focus:ring-blue-500"
+                />
+                <input
+                  type="checkbox"
+                  v-model="question.correctAnswers"
+                  :value="optIndex"
+                  class="accent-blue-500"
+                />
+                <button
+                  v-if="question.options.length > 2"
+                  @click.prevent="removeOption(index, optIndex)"
+                  class="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition"
+                >–</button>
+              </div>
+              <button
+                @click.prevent="addOption(index)"
+                class="mt-3 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition"
+              >+ Új válasz</button>
+            </div>
+
+            <!-- Beírós kérdés alapválasz -->
+            <div v-if="question.type === 'text'" class="mt-4">
+              <h3 class="text-sm font-semibold text-gray-300">Alapválasz</h3>
+              <input
+                v-model="question.defaultAnswer"
+                type="text"
+                class="w-full bg-gray-800 text-white rounded-lg p-3 border border-gray-600 focus:ring focus:ring-blue-500"
+              />
+            </div>
+
+            <!-- Kérdés törlése -->
+            <button
+              @click.prevent="removeQuestion(index)"
+              class="mt-4 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition"
+            >Törlés</button>
+          </div>
+        </div>
+
+        <!-- Kérdés hozzáadása -->
+        <button
+          @click.prevent="addQuestion"
+          class="w-full bg-blue-500 text-white px-5 py-3 rounded-lg shadow-md hover:bg-blue-600 transition"
+        >+ Kérdés hozzáadása</button>
+
+        <!-- Mentés -->
+        <button
+          type="submit"
+          class="mt-6 w-full bg-green-500 text-white px-5 py-3 rounded-lg shadow-md hover:bg-green-600 transition"
+        >Mentés</button>
+      </form>
     </div>
-  </template>
+  </div>
+</template>
 
 <script>
 import { router } from "@inertiajs/vue3";
-import Navbar from '@/Components/Navbar.vue';
+import Navbar from "@/Components/Navbar.vue";
 
 export default {
-  components: {
-    Navbar,
-  },
+  components: { Navbar },
   props: {
-    user: {
-      type: Object,
-      required: true,
-    },
-    quiz: {
-      type: Object,
-      required: true,
-    },
+    user: { type: Object, required: true },
+    quiz: { type: Object, required: true },
   },
   data() {
     return {
-      errorMessage: "",
+      alert: { visible: false, message: "" },
     };
+  },
+  created() {
+    // Inicializáljuk a defaultAnswer mezőt a backendből érkező default_answer alapján
+    this.quiz.questions.forEach(q => {
+      if (q.type === 'text') {
+        q.defaultAnswer = q.default_answer || '';
+      }
+    });
   },
   methods: {
     addQuestion() {
       if (this.quiz.questions.length < 50) {
         this.quiz.questions.push({
           id: null,
-          question_text: "", 
+          question_text: "",
           type: "multiple_choice",
-          options: ["", ""], 
+          options: ["", ""],
           correctAnswers: [],
+          defaultAnswer: "",
         });
       }
     },
-    addOption(questionIndex) {
-      this.quiz.questions[questionIndex].options.push("");
+    addOption(i) {
+      this.quiz.questions[i].options.push("");
     },
-    removeOption(questionIndex, optIndex) {
-      if (this.quiz.questions[questionIndex].options.length > 2) {
-        this.quiz.questions[questionIndex].options.splice(optIndex, 1);
+    removeOption(i, j) {
+      if (this.quiz.questions[i].options.length > 2) {
+        this.quiz.questions[i].options.splice(j, 1);
       }
     },
-    toggleCorrectAnswer(question, option) {
-      if (!Array.isArray(question.correctAnswers)) {
-        question.correctAnswers = [];
-      }
-
-      const index = question.correctAnswers.indexOf(option);
-      if (index > -1) {
-        question.correctAnswers.splice(index, 1);
-      } else {
-        question.correctAnswers.push(option);
-      }
-    },
-    removeQuestion(index) {
-      this.quiz.questions.splice(index, 1);
+    removeQuestion(i) {
+      this.quiz.questions.splice(i, 1);
     },
     submitQuiz() {
-      if (this.quiz.questions.length === 0) {
-        this.errorMessage = "Legalább egy kérdés szükséges a kvízhez!";
+      if (!this.quiz.questions.length) {
+        this.alert.message = "Legalább egy kérdés szükséges a kvízhez!";
+        this.alert.visible = true;
         return;
       }
-
-      console.log("Mentésre küldött adatok:", this.quiz);
-
+      for (let i = 0; i < this.quiz.questions.length; i++) {
+        const q = this.quiz.questions[i];
+        if (
+          q.type === "multiple_choice" &&
+          (!Array.isArray(q.correctAnswers) || !q.correctAnswers.length)
+        ) {
+          this.alert.message = `A(z) ${i + 1}. kérdéshez legalább egy helyes választ meg kell jelölni.`;
+          this.alert.visible = true;
+          return;
+        }
+        if (q.type === "text" && (!q.defaultAnswer || !q.defaultAnswer.trim())) {
+          this.alert.message = `A(z) ${i + 1}. beírós kérdéshez meg kell adni az alapválaszt.`;
+          this.alert.visible = true;
+          return;
+        }
+      }
+      this.alert.visible = false;
       router.put(route("quizzes.update", { id: this.quiz.id }), this.quiz, {
-        onSuccess: () => {
-          router.visit(route("dashboard")); 
-        },
+        onSuccess: () => router.visit(route("dashboard")),
       });
     },
   },
 };
 </script>
+
+<style>
+.slide-fade-enter-active,
+.slide-fade-leave-active { transition: all 0.3s ease; }
+.slide-fade-enter-from,
+.slide-fade-leave-to { opacity: 0; transform: translateY(-10px); }
+.slide-fade-enter-to,
+.slide-fade-leave-from { opacity: 1; transform: translateY(0); }
+</style>

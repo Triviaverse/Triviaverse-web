@@ -11,7 +11,19 @@ class Question extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['quiz_id', 'question_text', 'type', 'options', 'correctAnswers'];
+    protected $fillable = [
+        'quiz_id',
+        'question_text',
+        'type',
+        'options',
+        'correctAnswers',
+        'default_answer',   
+    ];
+
+    protected $casts = [
+        'options'        => 'array',
+        'correctAnswers' => 'array',
+    ];
 
     public function quiz() {
         return $this->belongsTo(Quiz::class);

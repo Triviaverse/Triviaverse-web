@@ -32,6 +32,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/quizzes/{id}/submit', [QuizController::class, 'submitAnswer'])->name('quizzes.submitAnswer');
     Route::get('/quizzes/{id}/edit', [QuizController::class, 'edit'])->name('quizzes.edit');
     Route::put('/quizzes/{id}', [QuizController::class, 'update'])->name('quizzes.update');
+    Route::get('/quizzes/{quiz}/result', [QuizController::class, 'showResult'])->name('quizzes.result');
+    Route::get('/results', [QuizController::class, 'myResults'])->name('results.index');
 });
 
 require __DIR__ . '/auth.php';
